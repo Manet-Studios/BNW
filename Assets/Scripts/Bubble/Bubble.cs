@@ -9,18 +9,30 @@ public class Bubble : MonoBehaviour
 
     public int id;
 
-    private bool dispersing;
+    public bool dispersing;
+
+    public float castRadius;
+
+    public LayerMask eggLayers;
 
     public void Initialize(Vector2 position)
     {
+        if (gameObject == null)
+        {
+            return;
+        }
         dispersing = false;
-        transform.right = Camera.main.ScreenToWorldPoint(position);
         rb2d = GetComponent<Rigidbody2D>();
-        rb2d.velocity = Vector2.right * speed;
+        rb2d.velocity = (position - (Vector2)transform.position) * speed;
     }
 
     public void Initialize(float delay)
     {
+        if (gameObject == null)
+        {
+            return;
+        }
+
         dispersing = true;
         rb2d = GetComponent<Rigidbody2D>();
         StartCoroutine(Delay(delay));
@@ -35,6 +47,10 @@ public class Bubble : MonoBehaviour
 
     public void Update()
     {
+        if (gameObject == null)
+        {
+            return;
+        }
         if (!dispersing)
         {
             rb2d.velocity = rb2d.velocity.normalized * speed;
@@ -51,16 +67,31 @@ public class Bubble : MonoBehaviour
         if (collision.collider.CompareTag("Bubble"))
         {
             rb2d.isKinematic = true;
+            rb2d.velocity = Vector2.zero;
             if (collision.collider.GetComponent<Bubble>().id == id)
             {
-                SpawnFX();
-                Destroy(gameObject);
+                ReactToEgg(castRadius);
             }
         }
     }
 
-    public void SpawnFX()
+    public void ReactToEgg(float cas)
     {
-        FindObjectOfType<BubblePop>().spawnedBubbles--;
+        Destroy(gameObject);
+
+        Collider2D[] eggs = Physics2D.OverlapCircleAll(transform.position, cas, eggLayers);
+        foreach (Collider2D coll in eggs)
+        {
+            if (coll == null)
+            {
+                continue;
+            }
+
+            Bubble bubble = coll.GetComponent<Bubble>();
+            if (bubble.id == id)
+            {
+                bubble.ReactToEgg(cas / 2f);
+            }
+        }
     }
 }

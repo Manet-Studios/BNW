@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 58333315581930366}
   - component: {fileID: 50851429936089068}
   - component: {fileID: 114916994938429744}
-  m_Layer: 0
+  m_Layer: 4
   m_Name: Female Egg
   m_TagString: Bubble
   m_Icon: {fileID: 0}
@@ -91,6 +91,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   id: 0
+  dispersing: 0
+  castRadius: 0.5
+  eggLayers:
+    serializedVersion: 2
+    m_Bits: 16
 --- !u!212 &212855065267258324
 SpriteRenderer:
   m_ObjectHideFlags: 1

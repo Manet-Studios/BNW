@@ -23,9 +23,31 @@ public class BubblePop : MonoBehaviour
     public float startDelay;
     public GameObject startCollider;
 
+    private Bubble nextBubble;
+
+    private bool started = false;
+    private List<Bubble> spawnedBubblesList = new List<Bubble>();
+
+    private GameManager gameManager;
+
+    public float additionalTime;
+
     private void OnEnable()
     {
+        foreach (Transform child in bubbleSpawnLocation)
+        {
+            GameObject.Destroy(child.gameObject);
+        }
+
+        foreach (Transform child in shootSpawn)
+        {
+            GameObject.Destroy(child.gameObject);
+        }
+        spawnedBubblesList.Clear();
+        bubblesToShoot.Clear();
+        gameManager = FindObjectOfType<GameManager>();
         complete = false;
+        started = false;
         StartCoroutine(StartUp());
     }
 
@@ -34,32 +56,43 @@ public class BubblePop : MonoBehaviour
         startCollider.SetActive(true);
         for (int i = 0; i < spawnedBubbles; i++)
         {
-            Instantiate(bubblePrefabs[Random.Range(0, bubblePrefabs.Length)], bubbleSpawnLocation.position + (Vector3)Random.insideUnitCircle * .005f, Quaternion.identity, bubbleSpawnLocation).Initialize(startDelay);
+            spawnedBubblesList.Add(Instantiate(bubblePrefabs[Random.Range(0, bubblePrefabs.Length)], bubbleSpawnLocation.position + (Vector3)Random.insideUnitCircle * .005f, Quaternion.identity, bubbleSpawnLocation));
+            spawnedBubblesList[i].Initialize(startDelay);
 
             yield return null;
         }
         yield return new WaitForSeconds(startDelay);
         for (int i = 0; i < startShootBubbles; i++)
         {
-            Bubble shootBubble = Instantiate(bubblePrefabs[Random.Range(0, bubblePrefabs.Length)], shootSpawn.position, Quaternion.identity);
+            Bubble shootBubble = Instantiate(bubblePrefabs[Random.Range(0, bubblePrefabs.Length)], shootSpawn.position, Quaternion.identity, shootSpawn);
+            shootBubble.dispersing = true;
+
             shootBubble.gameObject.SetActive(false);
+            bubblesToShoot.Enqueue(shootBubble);
             yield return null;
         }
         startCollider.SetActive(false);
+        canFire = true;
+        started = true;
+        nextBubble = bubblesToShoot.Dequeue();
+        nextBubble.gameObject.SetActive(true);
     }
 
     // Update is called once per frame
     private void Update()
     {
+        if (!complete && started && nextBubble == null && bubblesToShoot.Count == 0)
+        {
+            Complete();
+            return;
+        }
+
         if (complete)
         {
             return;
         }
-        else
-        {
-            complete = spawnedBubbles <= 0;
-        }
-        if (canFire && bubblesToShoot.Count > 0 && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+
+        if (canFire && nextBubble != null && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
             canFire = false;
             launchAnimator.SetTrigger("Fire");
@@ -67,11 +100,43 @@ public class BubblePop : MonoBehaviour
         }
     }
 
+    private void Complete()
+    {
+        StartCoroutine(CompletePhase());
+        complete = true;
+        int bubblesPopped = spawnedBubbles;
+        foreach (Bubble item in spawnedBubblesList)
+        {
+            if (item == null)
+            {
+                bubblesPopped--;
+            }
+        }
+
+        gameManager.AdditionalTime += ((float)bubblesPopped / spawnedBubbles) * additionalTime;
+    }
+
     public void FireBall()
     {
+        nextBubble.Initialize(Camera.main.ScreenToWorldPoint(touchPositions.Dequeue()));
+        nextBubble = null;
+        if (bubblesToShoot.Count > 0)
+        {
+            StartCoroutine(SpawnBubble());
+        }
+    }
+
+    private IEnumerator SpawnBubble()
+    {
+        yield return new WaitForSeconds(0.25f);
+        nextBubble = bubblesToShoot.Dequeue();
+        nextBubble.gameObject.SetActive(true);
         canFire = true;
-        Bubble shotBubble = bubblesToShoot.Dequeue();
-        shotBubble.gameObject.SetActive(true);
-        shotBubble.Initialize(Camera.main.ScreenToWorldPoint(touchPositions.Dequeue()));
+    }
+
+    private IEnumerator CompletePhase()
+    {
+        yield return new WaitForSeconds(2);
+        gameManager.SwitchPhases();
     }
 }

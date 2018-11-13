@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 58362411322826364}
   - component: {fileID: 50441856302278314}
   - component: {fileID: 114051740753705400}
-  m_Layer: 0
+  m_Layer: 4
   m_Name: FreeMason Egg
   m_TagString: Bubble
   m_Icon: {fileID: 0}
@@ -91,6 +91,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   id: 2
+  dispersing: 0
+  castRadius: 0.5
+  eggLayers:
+    serializedVersion: 2
+    m_Bits: 16
 --- !u!212 &212250761561977772
 SpriteRenderer:
   m_ObjectHideFlags: 1
